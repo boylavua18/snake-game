@@ -4,10 +4,73 @@ import './Board.css';
 
 class Board extends Component {
 
-  speed = 700;
+  speed = 100;
   evMoving = null;
   constructor(props) {
     super(props);
+    // let size =  this.props.size;
+    // this.state = {
+    //   matrix: [],
+    //   snake: [],
+    //   direct: 'right',
+    //   status: 1
+    // }
+    // this.state.snake.push({
+    //   x: Math.floor(size/2),
+    //   y: Math.floor(size/2)
+    // }, {
+    //   x: Math.floor(size/2),
+    //   y: Math.floor(size/2)-1
+    // }, {
+    //   x: Math.floor(size/2),
+    //   y: Math.floor(size/2)-2
+    // })
+    // for(let i = 0; i < size; i++) {
+    //   let squareStates = [];
+    //   for(let j = 0; j < size; j++) {
+    //     let check = this.isSnake(i,j)
+    //     squareStates.push(check);
+    //   }
+    //   this.state.matrix.push(squareStates);
+    // }
+
+    this.refreshBoard()
+  }
+
+  updateMatrix = (tail, head) => {
+    /*
+      When snake is moving, its head will be the next block and its tail must be
+      the nearest block with the previous tail.
+      if its next moving is its body/blocks or reach to board's border, the game
+      will end
+    */
+    let matrix = this.state.matrix;
+    let nexMove = matrix[head.x][head.y]
+    if(nexMove===true) {
+      this.setState({status:0})
+      clearInterval(this.evMoving)
+      // alert('Lose!')
+      let ap = window.confirm("You lose! Play again?");
+      console.log(ap)
+      if(ap) {
+        console.log('PLay again')
+        // this.refreshBoard()
+        // this.render()
+      }
+    } else{
+      if(nexMove===null) {
+        this.autoFood()
+      }
+      matrix[head.x][head.y] = true
+      matrix[tail.x][tail.y] = false
+      this.setState({
+        matrix: matrix
+      })
+
+    }
+  }
+
+  refreshBoard = () => {
     let size =  this.props.size;
     this.state = {
       matrix: [],
@@ -15,6 +78,12 @@ class Board extends Component {
       direct: 'right',
       status: 1
     }
+    // this.setState({
+    //   matrix: [],
+    //   snake: [],
+    //   direct: 'right',
+    //   status: 1
+    // })
     this.state.snake.push({
       x: Math.floor(size/2),
       y: Math.floor(size/2)
@@ -35,33 +104,11 @@ class Board extends Component {
     }
   }
 
-  updateMatrix = (tail, head) => {
-    let matrix = this.state.matrix;
-    let nexMove = matrix[head.x][head.y]
-    if(nexMove===true) {
-      this.setState({status:0})
-    } else{
-      if(nexMove===null) {
-
-        // matrix[head.x][head.y] = true
-        // matrix[tail.x][tail.y] = true
-        // let tmpSnake = this.state.snake;
-        // tmpSnake.unshift(head);
-        // this.setState({snake: tmpSnake});
-        this.autoFood()
-      }
-      matrix[head.x][head.y] = true
-      matrix[tail.x][tail.y] = false
-      // }
-
-      this.setState({
-        matrix: matrix
-      })
-
-    }
-  }
-
   snakeMoving = () => {
+    /*
+      When the snake director is changed, this function helps the snake keep
+      movingon the correct direct which is changed by user action.
+    */
     let bx = 0;
     let by = 0;
     switch(this.state.direct) {
@@ -82,6 +129,7 @@ class Board extends Component {
         by = 0;
         break;
     }
+
     let tmpSnake = this.state.snake;
     let matrix = this.state.matrix;
     let head = tmpSnake[0];
@@ -89,8 +137,15 @@ class Board extends Component {
     let nextMoveX = (head.x + bx) >= this.props.size || (head.x + bx) < 0 ? head.x:head.x+bx;
     let nextMoveY = (head.y + by) >= this.props.size || (head.y + by) < 0 ? head.y:head.y+by;
     if(matrix[nextMoveX][nextMoveY]===null) {
+      /*
+        if next move is a food, the snack will be fatter so we dont remove the last
+        block in its body
+      */
       tail = tmpSnake[tmpSnake.length-1]
     } else {
+      /*
+        if the next block is nothing, the snack keeps moving as normal
+      */
       tail = tmpSnake.pop()
     }
     let mover = {
@@ -100,15 +155,14 @@ class Board extends Component {
     this.updateMatrix(tail, mover)
     tmpSnake.unshift(mover);
     this.setState({snake: tmpSnake});
-
-    // this.updateMatrix(tail, mover)
-
-    // tmpSnake.unshift(mover);
-    // this.setState({snake: tmpSnake});
-
   }
 
   updateSnake = (ev) => {
+    /*
+      Catch the arrow key press event, when user press any arrow keys, the snake
+      director will be changed.
+      There are 4 modes: up, down, left, right
+    */
     if(ev){
       if(ev.keyCode === 38 && this.state.direct !== 'down') {
         //up
@@ -128,6 +182,9 @@ class Board extends Component {
   };
 
   isSnake = (x,y)=>{
+    /*
+    Check if the coord is snake body in the matrix or not
+    */
     let rs = false
     this.state.snake.forEach((item)=>{
       if(item.x === x && item.y === y) {
@@ -138,10 +195,13 @@ class Board extends Component {
   }
 
   autoFood = () => {
+    /*
+      Auto generate food on board. If its coord is confict with the snake,
+      the function will try to generate another coord til it is suitable.
+    */
     let x = Math.floor(Math.random()*this.props.size-1);
     let y = Math.floor(Math.random()*this.props.size-1);
     let matrix = this.state.matrix;
-    console.log('generating!')
     let curBlock = matrix[x][y]
     while(curBlock === true) {
       x = Math.floor(Math.random()*this.props.size-1);
@@ -150,19 +210,19 @@ class Board extends Component {
     }
     matrix[x][y] = null;
     this.setState({matrix: matrix})
-    console.log('generated!')
   }
 
   componentDidMount() {
+    //When the component is mounted, food will be generated randomly
     this.autoFood();
+    //and the snake will start moving on its default director
     this.evMoving = setInterval(this.snakeMoving, this.speed);
 
   }
 
   componentDidUpdate() {
     if(this.state.status === 0) {
-      clearInterval(this.evMoving)
-      // alert('Lose!')
+
     }
   }
 
@@ -172,10 +232,10 @@ class Board extends Component {
     for(let i = 0; i < boardSize; i++) {
       let items = [];
       for(let j = 0; j < boardSize; j++) {
-        let curSquare = <Square x={i} y={j} snake={this.state.snake} mode={this.state.matrix[i][j]}/>;
+        let curSquare = <Square x={i} y={j} key={i+'-'+j} snake={this.state.snake} mode={this.state.matrix[i][j]}/>;
         items.push(curSquare);
       }
-      let rowElm = <div className="board-row">{items}</div>;
+      let rowElm = <div className="board-row" key={i}>{items}</div>;
       boardRows.push(rowElm);
     }
 
