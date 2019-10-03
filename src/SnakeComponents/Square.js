@@ -13,33 +13,21 @@ class Square extends Component {
     }
   }
 
-  // update() {
-  //   let snake = this.props.snake;
-  //   snake.forEach((item)=>{
-  //     console.log("checking")
-  //     if(item.x === this.state.x && item.y===this.state.y) {
-  //       this.setState({
-  //         mode: true
-  //       });
-  //     }
-  //   })
-  // }
-
   componentWillReceiveProps(props) {
-    console.log('OK')
     this.setState({
       mode: props.mode
     })
-    // this.render()
   }
 
   render() {
     let mode = this.state.mode;
     let curSquare = null;
-    if(mode) {
+    if(mode===true) {
       curSquare = <div className="square snake"></div>;
-    } else {
+    } else if(mode===false) {
       curSquare = <div className="square"></div>;
+    } else {
+      curSquare = <div className="square food"></div>;
     }
     return (curSquare);
   }

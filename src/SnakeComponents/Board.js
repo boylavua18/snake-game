@@ -4,19 +4,26 @@ import './Board.css';
 
 class Board extends Component {
 
-  speed = 1000;
-
+  speed = 700;
+  evMoving = null;
   constructor(props) {
     super(props);
     let size =  this.props.size;
     this.state = {
       matrix: [],
       snake: [],
-      direct: 'left'
+      direct: 'right',
+      status: 1
     }
     this.state.snake.push({
       x: Math.floor(size/2),
       y: Math.floor(size/2)
+    }, {
+      x: Math.floor(size/2),
+      y: Math.floor(size/2)-1
+    }, {
+      x: Math.floor(size/2),
+      y: Math.floor(size/2)-2
     })
     for(let i = 0; i < size; i++) {
       let squareStates = [];
@@ -28,16 +35,29 @@ class Board extends Component {
     }
   }
 
-  updateMatrix = (coord) => {
+  updateMatrix = (tail, head) => {
     let matrix = this.state.matrix;
-    if(matrix[coord.x][coord.y]) {
-      clearInterval(this.snakeMoving);
-      alert('Lose!');
-    } else {
-      matrix[coord.x][coord.y] = true
+    let nexMove = matrix[head.x][head.y]
+    if(nexMove===true) {
+      this.setState({status:0})
+    } else{
+      if(nexMove===null) {
+
+        // matrix[head.x][head.y] = true
+        // matrix[tail.x][tail.y] = true
+        // let tmpSnake = this.state.snake;
+        // tmpSnake.unshift(head);
+        // this.setState({snake: tmpSnake});
+        this.autoFood()
+      }
+      matrix[head.x][head.y] = true
+      matrix[tail.x][tail.y] = false
+      // }
+
       this.setState({
         matrix: matrix
       })
+
     }
   }
 
@@ -63,42 +83,49 @@ class Board extends Component {
         break;
     }
     let tmpSnake = this.state.snake;
-    let head = tmpSnake.pop();
+    let matrix = this.state.matrix;
+    let head = tmpSnake[0];
+    let tail = null
     let nextMoveX = (head.x + bx) >= this.props.size || (head.x + bx) < 0 ? head.x:head.x+bx;
     let nextMoveY = (head.y + by) >= this.props.size || (head.y + by) < 0 ? head.y:head.y+by;
-
+    if(matrix[nextMoveX][nextMoveY]===null) {
+      tail = tmpSnake[tmpSnake.length-1]
+    } else {
+      tail = tmpSnake.pop()
+    }
     let mover = {
       x: nextMoveX,
       y: nextMoveY
     };
-    this.updateMatrix(mover)
-    tmpSnake.push(mover);
+    this.updateMatrix(tail, mover)
+    tmpSnake.unshift(mover);
     this.setState({snake: tmpSnake});
+
+    // this.updateMatrix(tail, mover)
+
+    // tmpSnake.unshift(mover);
+    // this.setState({snake: tmpSnake});
 
   }
 
   updateSnake = (ev) => {
     if(ev){
-      if(ev.keyCode === 38 && this.state.direct != 'down') {
+      if(ev.keyCode === 38 && this.state.direct !== 'down') {
         //up
         this.setState({direct: 'up'})
-      } else if (ev.keyCode === 37 && this.state.direct != 'right') {
+      } else if (ev.keyCode === 37 && this.state.direct !== 'right') {
         //left
         this.setState({direct: 'left'})
-      } else if (ev.keyCode === 40 && this.state.direct != 'up') {
+      } else if (ev.keyCode === 40 && this.state.direct !== 'up') {
         //down
         this.setState({direct: 'down'})
-      } else if (ev.keyCode === 39 && this.state.direct != 'left') {
+      } else if (ev.keyCode === 39 && this.state.direct !== 'left') {
         //right
         this.setState({direct: 'right'})
       }
     }
     ev.preventDefault()
   };
-
-  handler = ()=> {
-    // this.setState
-  }
 
   isSnake = (x,y)=>{
     let rs = false
@@ -110,19 +137,41 @@ class Board extends Component {
     return rs
   }
 
+  autoFood = () => {
+    let x = Math.floor(Math.random()*this.props.size-1);
+    let y = Math.floor(Math.random()*this.props.size-1);
+    let matrix = this.state.matrix;
+    console.log('generating!')
+    let curBlock = matrix[x][y]
+    while(curBlock === true) {
+      x = Math.floor(Math.random()*this.props.size-1);
+      y = Math.floor(Math.random()*this.props.size-1);
+      curBlock = matrix[x][y];
+    }
+    matrix[x][y] = null;
+    this.setState({matrix: matrix})
+    console.log('generated!')
+  }
+
   componentDidMount() {
-    setInterval(this.snakeMoving, 1000);
+    this.autoFood();
+    this.evMoving = setInterval(this.snakeMoving, this.speed);
+
+  }
+
+  componentDidUpdate() {
+    if(this.state.status === 0) {
+      clearInterval(this.evMoving)
+      // alert('Lose!')
+    }
   }
 
   render() {
     let boardSize = this.props.size;
     let boardRows = [];
-
-    // this.updateSnake();
     for(let i = 0; i < boardSize; i++) {
       let items = [];
       for(let j = 0; j < boardSize; j++) {
-        let check = this.isSnake(i,j)
         let curSquare = <Square x={i} y={j} snake={this.state.snake} mode={this.state.matrix[i][j]}/>;
         items.push(curSquare);
       }
